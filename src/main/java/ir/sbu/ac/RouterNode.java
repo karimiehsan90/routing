@@ -25,7 +25,7 @@ public class RouterNode {
         sendTable(false);
     }
 
-    private void sendTable(boolean sendOriginal) {
+    public void sendTable(boolean sendOriginal) {
         int[] toSend = minCosts;
         if (sendOriginal) {
             toSend = costs;
@@ -48,13 +48,32 @@ public class RouterNode {
 
     //--------------------------------------------------
     public void recvUpdate(RouterPacket pkt) {
-        boolean changed = false;
+        boolean changed = false, hasmetric = false;
         myGUI.println(pkt.sourceid + " " + pkt.destid + " " + Arrays.toString(pkt.mincost));
-        for (int i = 0; i < pkt.mincost.length; i++) {
-            if (minCosts[i] > minCosts[pkt.sourceid] + pkt.mincost[i]) {
-                minCosts[i] = minCosts[pkt.sourceid] + pkt.mincost[i];
-                path[i] = pkt.sourceid;
-                changed = true;
+        if (hasMetric(pkt.mincost)) {
+            for (int i = 0; i < pkt.mincost.length; i++) {
+                if (path[i] == pkt.sourceid) {
+                    minCosts[i] = protocolMetric;
+                    path[i] = myID;
+                    hasmetric = true;
+                }
+            }
+            sendTable(false);
+            for (int i = 0; i < pkt.mincost.length; i++) {
+                if (minCosts[i] == protocolMetric) {
+                    minCosts[i] = costs[i];
+                }
+            }
+            sendTable(false);
+            return;
+        }
+        else {
+            for (int i = 0; i < pkt.mincost.length; i++) {
+                if (minCosts[i] > minCosts[pkt.sourceid] + pkt.mincost[i]) {
+                    minCosts[i] = minCosts[pkt.sourceid] + pkt.mincost[i];
+                    path[i] = pkt.sourceid;
+                    changed = true;
+                }
             }
         }
         if (changed) {
@@ -78,8 +97,9 @@ public class RouterNode {
 
     //--------------------------------------------------
     public void updateLinkCost(int dest, int newcost) {
-        costs[dest] = protocolMetric;
-        sendTable(true);
-        costs[dest] = newcost;
+        costs[dest] = minCosts[dest] = protocolMetric;
+        sendTable(false);
+        costs[dest] = minCosts[dest] = newcost;
+        sendTable(false);
     }
 }
