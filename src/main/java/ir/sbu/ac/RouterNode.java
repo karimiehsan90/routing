@@ -97,8 +97,10 @@ public class RouterNode {
 
     //--------------------------------------------------
     public void updateLinkCost(int dest, int newcost) {
-        costs[dest] = minCosts[dest] = protocolMetric;
-        sendTable(false);
+        if (RouterSimulator.LINKCHANGES) {
+            costs[dest] = minCosts[dest] = protocolMetric;
+            sendTable(false);
+        }
         costs[dest] = minCosts[dest] = newcost;
         sendTable(false);
     }
